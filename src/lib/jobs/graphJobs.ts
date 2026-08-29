@@ -36,20 +36,17 @@ export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = f
   }
 
   const responses: unknown[] = [];
-  const errors: Error[] = [];
   const stats: StatEntry[] = [];
 
   for (const substitution of items) {
     try {
       if (!substitution.teamId) {
         logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing teamId`, substitution._id.toString());
-        errors.push(new Error(`Substitution '${substitution._id}' missing teamId`));
         continue;
       }
 
       if (!substitution.substituteId) {
         logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing substituteId`, substitution._id.toString());
-        errors.push(new Error(`Substitution '${substitution.substituteId}' missing substituteId`));
         continue;
       }
 
