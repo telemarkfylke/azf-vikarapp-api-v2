@@ -2,10 +2,12 @@
   "name": "azf-vikarapp-api-v2",
   "version": "1.1.2",
   "description": "Handler for VikarApp API v2",
-  "main": "src/functions/*.js",
+  "type": "module",
+  "main": "dist/src/functions/*.js",
   "scripts": {
-    "start": "func start",
-    "test": "npx @biomejs/biome check",
+    "start": "npm run build && func start",
+    "build": "tsc",
+    "test": "npx @biomejs/biome check && tsc --noEmit",
     "lint:fix": "npx @biomejs/biome check --write"
   },
   "dependencies": {
@@ -17,6 +19,8 @@
     "node-cache": "^5.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10"
+    "@biomejs/biome": "2.5.10",
+    "@types/node": "^26.2.0",
+    "typescript": "^6.0.3"
   }
 }

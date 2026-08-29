@@ -1,7 +1,13 @@
-const { logger } = require("@vestfoldfylke/loglady");
-const { fylke, statistics } = require("../../../config.js");
+import { logger } from "@vestfoldfylke/loglady";
+import { fylke, statistics } from "../../../config.js";
 
-module.exports = async (stat) => {
+export type StatEntry = {
+  teamId: string;
+  status: string;
+  description: string;
+};
+
+const createStats = async (stat: StatEntry): Promise<boolean> => {
   const logPrefix = "createStats";
   logger.info(`${logPrefix} - Creating statistics for {Status} substitution`, stat.status);
   const statObj = {
@@ -39,3 +45,5 @@ module.exports = async (stat) => {
   logger.info(`${logPrefix} - Successfully created statistics for {Status} substitution. ApiStatus: {ApiStatus} : {@StatObject}`, stat.status, response.status, statObj);
   return response.status === 200;
 };
+
+export default createStats;

@@ -1,52 +1,53 @@
-const { logger } = require("@vestfoldfylke/loglady");
-const { mongoDB } = require("../../../config.js");
-const { getGroupOwners, getGroupMembers, removeGroupMember, removeGroupOwner, addGroupOwner, getAdditionalRequestorInfo } = require("../callGraph.js");
-const { getMongoClient } = require("../mongoClient.js");
-const createStats = require("./createStats.js");
-const { logToDB } = require("./logToDB.js");
+import type { HttpRequest, InvocationContext } from "@azure/functions";
+import { logger } from "@vestfoldfylke/loglady";
+import { mongoDB } from "../../../config.js";
+import type { GraphUser } from "../../types/graph.js";
+import type { Requestor } from "../../types/requestor.js";
+import type { Substitution } from "../../types/substitution.js";
+import { addGroupOwner, getAdditionalRequestorInfo, getGroupMembers, getGroupOwners, removeGroupMember, removeGroupOwner } from "../callGraph.js";
+import { getMongoClient } from "../mongoClient.js";
+import createStats, { type StatEntry } from "./createStats.js";
+import { logToDB } from "./logToDB.js";
 
-const deactivateSubstitutions = async (onlyFirst = false, substitutions, request, context) => {
+export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = false, substitutions?: Substitution[], request?: HttpRequest, context?: InvocationContext): Promise<unknown[]> => {
   const logPrefix = "deactivateSubstitutions - graphJobs.js";
-  // Connect to the database
   const mongoClient = await getMongoClient();
 
-  // If no substitutions were provided, the timetrigger was the one that called this function. Get the active substitutions from the database.
-  if (!substitutions) {
+  let items = substitutions;
+  if (!items) {
     logger.info(`${logPrefix} - No substitutions provided. Get the active substitutions from the database`);
     const query = { status: "active", expirationTimestamp: { $lte: new Date() } };
     try {
-      substitutions = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray();
+      items = (await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray()) as unknown as Substitution[];
     } catch (error) {
       logger.errorException(error, `${logPrefix} - An error occured while trying to get the active substitutions`);
       throw new Error("An error occured while trying to get the active substitutions");
     }
   }
 
-  // Only deactivate the first substitution.
-  if (onlyFirst && substitutions.length > 0) substitutions = [substitutions[0]];
+  if (onlyFirst && items.length > 0 && items[0]) items = [items[0]];
 
-  const responses = [];
-  const error = { errors: [] };
-  const stats = [];
+  const responses: unknown[] = [];
+  const errors: Error[] = [];
+  const stats: StatEntry[] = [];
 
-  for (const substitution of substitutions) {
+  for (const substitution of items) {
     try {
       if (!substitution.teamId) {
-        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing teamId`, substitution._id);
-        error.errors.push(new Error(`Substitution '${substitution._id}' missing teamId`));
+        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing teamId`, substitution._id.toString());
+        errors.push(new Error(`Substitution '${substitution._id}' missing teamId`));
         continue;
       }
       if (!substitution.substituteId) {
-        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing substituteId`, substitution._id);
-        error.errors.push(new Error(`Substitution '${substitution.substituteId}' missing substituteId`));
+        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing substituteId`, substitution._id.toString());
+        errors.push(new Error(`Substitution '${substitution.substituteId}' missing substituteId`));
         continue;
       }
 
-      // Make sure that the substitute is already owner. Find owners and Members.
       logger.info(`${logPrefix} - Get the owners and members of the team {SubstitutionTeamId}`, substitution.teamId);
-      const owners = await getGroupOwners(substitution.teamId, substitution._id);
+      const owners: GraphUser[] = (await getGroupOwners(substitution.teamId, substitution._id)) ?? [];
       logger.info(`${logPrefix} - Got {OwnerCount} owners of team {SubstitutionTeamId}`, owners.length, substitution.teamId);
-      const members = await getGroupMembers(substitution.teamId);
+      const members: GraphUser[] = (await getGroupMembers(substitution.teamId)) ?? [];
       logger.info(`${logPrefix} - Got {MemberCount} members of team {SubstitutionTeamId}`, members.length, substitution.teamId);
 
       logger.info(`${logPrefix} - Check if the substitute {SubstituteId} is an owner or a member of team {SubstitutionTeamId}`, substitution.substituteId, substitution.teamId);
@@ -55,17 +56,14 @@ const deactivateSubstitutions = async (onlyFirst = false, substitutions, request
       const currentMember = members.find((i) => i.id === substitution.substituteId);
       logger.info(`${logPrefix} - Substitution-subject as member: {@CurrentMember}`, currentMember);
 
-      // If the substitute is an owner, remove the owner. If the substitute is a member, remove the member.
       logger.info(`${logPrefix} - Remove the substitute {SubstituteId} from the team {SubstitutionTeamId} if it is an owner or a member`, substitution.substituteId, substitution.teamId);
       if (currentOwner || currentMember) {
         if (currentOwner) {
-          // Remove the owner
           logger.info(`${logPrefix} - Remove the substitute {SubstituteId} as owner from team {SubstitutionTeamId}`, substitution.substituteId, substitution.teamId);
           await removeGroupOwner(substitution.teamId, substitution.substituteId);
           logger.info(`${logPrefix} - Successfully removed the substitute {SubstituteId} as owner from team {SubstitutionTeamId}`, substitution.substituteId, substitution.teamId);
         }
         if (currentMember) {
-          // Remove the member
           logger.info(`${logPrefix} - Remove the substitute {SubstituteId} as member from team {SubstitutionTeamId}`, substitution.substituteId, substitution.teamId);
           await removeGroupMember(substitution.teamId, substitution.substituteId);
           logger.info(`${logPrefix} - Successfully removed the substitute {SubstituteId} as member from team {SubstitutionTeamId}`, substitution.substituteId, substitution.teamId);
@@ -77,13 +75,13 @@ const deactivateSubstitutions = async (onlyFirst = false, substitutions, request
           substitution.teamId
         );
       }
-      // Set the substitution status to 'expired'
-      logger.info(`${logPrefix} - Set the substitution: {SubstitutionId} status to 'expired'`, substitution._id);
+
+      logger.info(`${logPrefix} - Set the substitution: {SubstitutionId} status to 'expired'`, substitution._id.toString());
       const updatedSub = await mongoClient
         .db(mongoDB.DB_NAME)
         .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
         .updateOne({ _id: substitution._id }, { $set: { status: "expired" } });
-      logger.info(`${logPrefix} - Substitution: {SubstitutionId} updated, status: 'expired'`, substitution._id);
+      logger.info(`${logPrefix} - Substitution: {SubstitutionId} updated, status: 'expired'`, substitution._id.toString());
       responses.push(updatedSub);
       stats.push({ teamId: substitution.teamId, status: "expired", description: "Substitute expired" });
     } catch (error) {
@@ -93,11 +91,10 @@ const deactivateSubstitutions = async (onlyFirst = false, substitutions, request
         substitution.substituteId,
         substitution.teamId
       );
-      // Log the error to the db
       await logToDB("error", error, request, context);
     }
   }
-  // Create statistics for the deactivated substitutions
+
   if (responses.length > 0) {
     logger.info(`${logPrefix} - Create statistics for the deactivated substitutions`);
     for (const stat of stats) {
@@ -105,55 +102,43 @@ const deactivateSubstitutions = async (onlyFirst = false, substitutions, request
     }
   }
 
-  // Log the substitutions to the db
   logger.info(`${logPrefix} - Deactivated {SubstitutionCount}' substitutions`, responses.length);
   await logToDB("info", { message: `Deactivated '${responses.length}' substitutions`, substitutions: responses }, request, context);
 
-  // Return the responses
   return responses;
 };
 
-const activateSubstitutions = async (onlyFirst = false, request, context) => {
+export const activateSubstitutions = async (onlyFirst: boolean | undefined = false, request?: HttpRequest, context?: InvocationContext): Promise<unknown[] | undefined> => {
   const logPrefix = "activateSubstitutions - graphJobs.js";
-  // Connect to the database
   const mongoClient = await getMongoClient();
 
-  // Define the query
   const query = { status: "pending" };
-
-  // Get the pending substitutions from the database
-  let pendingSubstitutions = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray();
+  let pendingSubstitutions = (await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray()) as unknown as Substitution[];
 
   if (!pendingSubstitutions || pendingSubstitutions.length === 0) {
     logger.info(`${logPrefix} - No pending substitutions found`);
     return;
   }
 
-  // If onlyFirst is true, only activate the first substitution
-  if (onlyFirst && pendingSubstitutions.length > 0) {
+  if (onlyFirst && pendingSubstitutions.length > 0 && pendingSubstitutions[0]) {
     logger.info(`${logPrefix} - onlyFirst is true. Only activate the first substitution`);
     pendingSubstitutions = [pendingSubstitutions[0]];
   }
 
-  // Holds the responses and errors
-  const responses = [];
-  // Holds the statistics
-  const stats = [];
+  const responses: unknown[] = [];
+  const stats: StatEntry[] = [];
 
-  // Loop through the pending substitutions and activate them.
-  /* eslint no-unreachable-loop: ["error", { "ignore": ["ForOfStatement"] }] */
   for (const substitution of pendingSubstitutions) {
     try {
       if (!substitution.teamId) {
-        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing teamId`, substitution._id);
+        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing teamId`, substitution._id.toString());
         throw new Error(`Substitution '${substitution._id}' missing teamId`);
       }
       if (!substitution.substituteId) {
-        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing substituteId`, substitution._id);
+        logger.error(`${logPrefix} - Substitution '{SubstitutionId}' missing substituteId`, substitution._id.toString());
         throw new Error(`Substitution '${substitution._id}' missing substituteId`);
       }
 
-      // Add the substitute as owner to the team
       logger.info(`${logPrefix} - Add the substitute as owner to the team`);
       try {
         await addGroupOwner(substitution.teamId, substitution.substituteId);
@@ -162,11 +147,10 @@ const activateSubstitutions = async (onlyFirst = false, request, context) => {
         await logToDB("error", error, request, context);
       }
 
-      // Set the substitution status to 'active'
       const updatedSub = await mongoClient
         .db(mongoDB.DB_NAME)
         .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
-        .updateOne({ _id: substitution._id }, { $set: { status: "active", updatedTimestamp: new Date() } }, { new: true });
+        .updateOne({ _id: substitution._id }, { $set: { status: "active", updatedTimestamp: new Date() } });
       responses.push(updatedSub);
       stats.push({ teamId: substitution.teamId, status: "active", description: "Substitute activated" });
     } catch (error) {
@@ -175,32 +159,24 @@ const activateSubstitutions = async (onlyFirst = false, request, context) => {
     }
 
     await logToDB("info", { message: `Activated '${responses.length}' substitutions`, substitutions: responses }, request, context);
-    // Create statistics for the activated substitutions
     for (const stat of stats) {
       await createStats(stat);
     }
 
-    // Return the responses
     return responses;
   }
+
+  return responses;
 };
 
-const getEmployeeInfo = async (requestor) => {
+export const getEmployeeInfo = async (requestor: Requestor): Promise<GraphUser> => {
   const logPrefix = "getEmployeeInfo";
   const info = await getAdditionalRequestorInfo(requestor);
 
-  // Validate that the returned object has the required properties
-  if (!info.jobTitle || !info.department || !info.officeLocation || !info.company) {
+  if (!info || !info.jobTitle || !info.department || !info.officeLocation || !info.companyName) {
     logger.error(`${logPrefix} - Missing required properties in the returned object`);
     throw new Error("Missing required properties in the returned object");
   }
 
-  // Return the info
   return info;
-};
-
-module.exports = {
-  deactivateSubstitutions,
-  activateSubstitutions,
-  getEmployeeInfo
 };

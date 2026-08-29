@@ -1,30 +1,32 @@
-const { logger } = require("@vestfoldfylke/loglady");
-const { mongoDB } = require("../../../config.js");
-const { getMongoClient } = require("../mongoClient.js");
+import { logger } from "@vestfoldfylke/loglady";
+import { mongoDB } from "../../../config.js";
+import type { PermittedLocation } from "../../types/graph.js";
+import { getMongoClient } from "../mongoClient.js";
 
-const getPermittedLocations = async (company) => {
+type SchoolDoc = {
+  _id: unknown;
+  name: string;
+  permittedSchools?: PermittedLocation[];
+};
+
+export const getPermittedLocations = async (company: string): Promise<PermittedLocation[]> => {
   const logPrefix = "getPermittedLocations";
-  const permittedLocations = [];
+  const permittedLocations: PermittedLocation[] = [];
 
-  // Connect to the database
   const mongoClient = await getMongoClient();
 
-  // Find the school provided in company
-  const school = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SCHOOLS_COLLECTION).findOne({ name: company });
+  const school = (await mongoClient.db(mongoDB.DB_NAME).collection<SchoolDoc>(mongoDB.SCHOOLS_COLLECTION).findOne({ name: company })) as SchoolDoc | null;
 
-  // Validate that the school was found and exists
   if (!school) {
     logger.error(`${logPrefix} - School not found for company '{Company}'`, company);
     throw new Error("School not found");
   }
 
-  // Add the users own school to the permitted locations
   logger.info(`${logPrefix} - Add the users own school to the permitted locations`);
   if (school._id && school.name) {
     permittedLocations.push({ _id: school._id, name: school.name });
   }
 
-  // Add any other permitted schools to the permitted locations
   logger.info(`${logPrefix} - Add any other permitted schools to the permitted locations`);
   if (school.permittedSchools && Array.isArray(school.permittedSchools)) {
     for (const location of school.permittedSchools) {
@@ -34,10 +36,5 @@ const getPermittedLocations = async (company) => {
     }
   }
 
-  // Return the permitted locations
   return permittedLocations;
-};
-
-module.exports = {
-  getPermittedLocations
 };
