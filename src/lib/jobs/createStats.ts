@@ -1,11 +1,6 @@
 import { logger } from "@vestfoldfylke/loglady";
 import { fylke, statistics } from "../../../config.js";
-
-export type StatEntry = {
-  teamId: string;
-  status: string;
-  description: string;
-};
+import type { StatEntry } from "../../types/stats.js";
 
 type StatObject = {
   system: string;

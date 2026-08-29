@@ -4,10 +4,11 @@ import type { UpdateResult } from "mongodb";
 import { mongoDB } from "../../../config.js";
 import type { GraphUser } from "../../types/graph.js";
 import type { Requestor } from "../../types/requestor.js";
+import type { StatEntry } from "../../types/stats.js";
 import type { Substitution } from "../../types/substitution.js";
 import { addGroupOwner, getAdditionalRequestorInfo, getGroupMembers, getGroupOwners, removeGroupMember, removeGroupOwner } from "../callGraph.js";
 import { getMongoClient } from "../mongoClient.js";
-import createStats, { type StatEntry } from "./createStats.js";
+import createStats from "./createStats.js";
 import { logToDB } from "./logToDB.js";
 
 export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = false, substitutions?: Substitution[], request?: HttpRequest, context?: InvocationContext): Promise<unknown[]> => {
@@ -21,6 +22,7 @@ export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = f
       status: "active",
       expirationTimestamp: { $lte: new Date() }
     };
+
     try {
       items = (await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray()) as unknown as Substitution[];
     } catch (error) {
@@ -207,7 +209,7 @@ export const getEmployeeInfo = async (requestor: Requestor): Promise<GraphUser> 
   const logPrefix: string = "getEmployeeInfo";
   const info: GraphUser | null = await getAdditionalRequestorInfo(requestor);
 
-  if (!info || !info.jobTitle || !info.department || !info.officeLocation || !info.companyName) {
+  if (!info?.jobTitle || !info.department || !info.officeLocation || !info.companyName) {
     logger.error(`${logPrefix} - Missing required properties in the returned object`);
     throw new Error("Missing required properties in the returned object");
   }

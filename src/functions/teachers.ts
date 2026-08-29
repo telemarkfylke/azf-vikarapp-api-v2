@@ -45,6 +45,7 @@ const handler = async (request: HttpRequest, context: InvocationContext): Promis
   } catch (error) {
     logger.errorException(error, `${logPrefix} - An error occured while trying to get the teachers`);
     await logToDB("error", error, request, context, requestor);
+
     return {
       status: 500,
       jsonBody: { error: error instanceof Error ? error.message : String(error) }

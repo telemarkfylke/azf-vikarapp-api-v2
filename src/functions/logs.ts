@@ -17,6 +17,7 @@ type LogsFilter = {
 const handler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
   const logPrefix: string = "logs";
   let requestor: Requestor | undefined;
+
   try {
     ({ requestor } = await prepareRequest(request));
     if (NODE_ENV !== "development" && !requestor.roles.includes("App.Admin")) {

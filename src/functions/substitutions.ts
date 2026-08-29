@@ -43,6 +43,7 @@ const validatePost = (requestBody: SubstitutionRequest[], requestor: Requestor, 
   );
 
   logger.info(`${logPrefix} - Make sure all the required properties are provided`);
+
   for (const substitution of deduped) {
     if (!requestor.roles.includes("App.Admin") && requestor.upn !== substitution.substituteUpn) {
       logger.warn(
@@ -158,6 +159,7 @@ const handleGet = async (request: HttpRequest, context: InvocationContext, reque
   if (years.length > 0) {
     const $or: Record<string, unknown>[] = years.map((y: string) => {
       const year: number = Number.parseInt(y, 10);
+
       return {
         createdTimestamp: {
           $gt: new Date(year, 0, 1, 1),
@@ -171,10 +173,12 @@ const handleGet = async (request: HttpRequest, context: InvocationContext, reque
   const filter: Record<string, unknown> = clauses.length > 0 ? { $and: clauses } : {};
 
   const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
+
   try {
     logger.info(`${logPrefix} - Query the database`);
     const substitutions: unknown[] = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(filter).sort({ expirationTimestamp: -1 }).toArray();
     logger.info(`${logPrefix} - Found {SubstitutionCount} substitutions`, substitutions.length);
+
     return {
       status: 200,
       jsonBody: substitutions
@@ -182,6 +186,7 @@ const handleGet = async (request: HttpRequest, context: InvocationContext, reque
   } catch (error) {
     logger.errorException(error, `${logPrefix} - An error occured while trying to get the substitutions`);
     await logToDB("error", error, request, context, requestor);
+
     return {
       status: 500,
       jsonBody: errorBody(error)
@@ -197,6 +202,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
   const uniqueTeacherUpns: string[] = [...new Set(requestBody.map((i: SubstitutionRequest) => i.teacherUpn))];
 
   const substitutes: EnrichedSubstitute[] = [];
+
   for (const upn of uniqueSubstituteUpns) {
     const substitute: EnrichedSubstitute | null = (await getUser(upn)) as EnrichedSubstitute | null;
     if (!substitute) {
@@ -226,6 +232,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
   }
 
   const teachers: EnrichedTeacher[] = [];
+
   for (const upn of uniqueTeacherUpns) {
     const teacher: GraphUser | null = (await getUser(upn)) as GraphUser | null;
     if (!teacher?.id) {
@@ -267,6 +274,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
         substitute.userPrincipalName,
         teacher.userPrincipalName
       );
+
       if (!requestor.roles.includes("App.Admin")) {
         if (!Array.isArray(substitute.permittedLocations) || substitute.permittedLocations.length === 0) {
           logger.error(
@@ -325,37 +333,43 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
           _id: activeSubstitution._id,
           expirationTimestamp
         });
-      } else if (expiredSubstitution) {
+
+        continue;
+      }
+
+      if (expiredSubstitution) {
         logger.info(`${logPrefix} - The selected substitution with id {ExpiredSubstitutionId} is currently expired and will be renewed`, expiredSubstitution._id.toString());
         renewedExpiredSubstitutions.push({
           expiredSubstitution: { ...substitution },
           _id: expiredSubstitution._id,
           expirationTimestamp
         });
-      } else {
-        let teamSdsId: string = team.mail;
-        if (teamSdsId.includes("_")) {
-          teamSdsId = teamSdsId.substring(teamSdsId.indexOf("_") + 1);
-        }
 
-        newSubstitutions.push({
-          _id: new ObjectId(),
-          status: "pending",
-          teacherId: teacher.id,
-          teacherName: teacher.displayName ?? "",
-          teacherUpn: teacher.userPrincipalName,
-          substituteId: substitute.id,
-          substituteName: substitute.displayName ?? "",
-          substituteUpn: substitute.userPrincipalName,
-          teamId: team.id,
-          teamName: team.displayName,
-          teamEmail: team.mail,
-          teamSdsId,
-          substitutionUpdated: 0,
-          expirationTimestamp,
-          createdTimestamp: new Date()
-        });
+        continue;
       }
+
+      let teamSdsId: string = team.mail;
+      if (teamSdsId.includes("_")) {
+        teamSdsId = teamSdsId.substring(teamSdsId.indexOf("_") + 1);
+      }
+
+      newSubstitutions.push({
+        _id: new ObjectId(),
+        status: "pending",
+        teacherId: teacher.id,
+        teacherName: teacher.displayName ?? "",
+        teacherUpn: teacher.userPrincipalName,
+        substituteId: substitute.id,
+        substituteName: substitute.displayName ?? "",
+        substituteUpn: substitute.userPrincipalName,
+        teamId: team.id,
+        teamName: team.displayName,
+        teamEmail: team.mail,
+        teamSdsId,
+        substitutionUpdated: 0,
+        expirationTimestamp,
+        createdTimestamp: new Date()
+      });
     }
 
     let documents: unknown[] = [];
@@ -364,12 +378,14 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
         logger.info(`${logPrefix} - Insert the new substitution`);
         const result: InsertOneResult = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).insertOne(newSubstitution);
         documents.push(result);
+
         try {
           await activateSubstitutions(false, request, context);
           await logToDB("info", newSubstitution, request, context, requestor);
         } catch (error) {
           logger.errorException(error, `${logPrefix} - An error occured while trying to create logentry in the database`);
           await logToDB("error", error, request, context, requestor);
+
           return {
             status: 404,
             jsonBody: errorBody(error)
@@ -378,6 +394,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
       } catch (error) {
         logger.errorException(error, `${logPrefix} - An error occured while trying to Insert the new substitutions into the DB`);
         await logToDB("error", error, request, context, requestor);
+
         return {
           status: 404,
           jsonBody: errorBody(error)
@@ -393,11 +410,13 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
           .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
           .updateOne({ _id: new ObjectId(renewal._id) }, { $set: { expirationTimestamp: renewal.expirationTimestamp, updatedTimestamp: new Date() }, $inc: { substitutionUpdated: 1 } });
         documents = [...documents, result];
+
         try {
           await logToDB("info", renewal, request, context, requestor);
         } catch (error) {
           logger.errorException(error, `${logPrefix} - An error occured while trying to create logentry in the database`);
           await logToDB("error", error, request, context, requestor);
+
           return {
             status: 404,
             jsonBody: errorBody(error)
@@ -406,6 +425,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
       } catch (error) {
         logger.errorException(error, `${logPrefix} - An error occured while trying to Update the renewed substitutions in the DB`);
         await logToDB("error", error, request, context, requestor);
+
         return {
           status: 404,
           jsonBody: errorBody(error)
@@ -424,12 +444,14 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
             { $set: { expirationTimestamp: renewal.expirationTimestamp, updatedTimestamp: new Date(), status: "pending" }, $inc: { substitutionUpdated: 1 } }
           );
         documents = [...documents, result];
+
         try {
           await activateSubstitutions(false, request, context);
           await logToDB("info", renewal, request, context, requestor);
         } catch (error) {
           logger.errorException(error, `${logPrefix} - An error occured while trying to create logentry in the database`);
           await logToDB("error", error, request, context, requestor);
+
           return {
             status: 404,
             jsonBody: errorBody(error)
@@ -438,6 +460,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
       } catch (error) {
         logger.errorException(error, `${logPrefix} - An error occured while trying to Update the renewed substitutions in the DB`);
         await logToDB("error", error, request, context, requestor);
+
         return {
           status: 404,
           jsonBody: errorBody(error)
@@ -452,6 +475,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
   } catch (error) {
     logger.errorException(error, `${logPrefix} - An error occured while trying to create/renew the substitutions`);
     await logToDB("error", error, request, context, requestor);
+
     return {
       status: 404,
       jsonBody: errorBody(error)
@@ -488,6 +512,7 @@ const handlePut = async (request: HttpRequest, context: InvocationContext, reque
     const response: unknown[] = await deactivateSubstitutions(undefined, substitutions, request, context);
 
     logger.info(`${logPrefix} - Return the deactivated substitutions`);
+
     return {
       status: 201,
       jsonBody: response
@@ -495,6 +520,7 @@ const handlePut = async (request: HttpRequest, context: InvocationContext, reque
   } catch (error) {
     logger.errorException(error, `${logPrefix} - An error occured while trying to deactivate the substitutions`);
     await logToDB("error", error, request, context, requestor);
+
     return {
       status: 500,
       jsonBody: errorBody(error)

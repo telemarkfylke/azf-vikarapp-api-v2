@@ -1,7 +1,8 @@
 import type { HttpRequest } from "@azure/functions";
+import type { ValidatedClaims } from "../../types/auth.js";
 import type { Requestor } from "../../types/requestor.js";
 import verifyKey from "./apikey.js";
-import validateAzureAd, { type ValidatedClaims } from "./azuread.js";
+import validateAzureAd from "./azuread.js";
 
 type TestRequestWithRequestor = HttpRequest & { requestor?: Requestor };
 

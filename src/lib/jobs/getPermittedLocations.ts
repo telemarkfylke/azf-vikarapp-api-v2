@@ -31,14 +31,17 @@ export const getPermittedLocations = async (company: string): Promise<PermittedL
   }
 
   logger.info(`${logPrefix} - Add any other permitted schools to the permitted locations`);
-  if (school.permittedSchools && Array.isArray(school.permittedSchools)) {
-    for (const location of school.permittedSchools) {
-      if (location._id && location.name) {
-        permittedLocations.push({
-          _id: location._id,
-          name: location.name
-        });
-      }
+
+  if (!(school.permittedSchools && Array.isArray(school.permittedSchools))) {
+    return permittedLocations;
+  }
+
+  for (const location of school.permittedSchools) {
+    if (location._id && location.name) {
+      permittedLocations.push({
+        _id: location._id,
+        name: location.name
+      });
     }
   }
 

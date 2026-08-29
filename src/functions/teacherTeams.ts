@@ -46,6 +46,7 @@ const handler = async (request: HttpRequest, context: InvocationContext): Promis
     ownedObjects = ownedObjects.filter((object: GraphOwnedObject) => !object.displayName.toLowerCase().startsWith("exp"));
 
     logger.info(`${logPrefix} - Found {OwnedObjectCount} teams for user with upn {Upn}`, ownedObjects.length, upn);
+
     return {
       status: 200,
       jsonBody: ownedObjects

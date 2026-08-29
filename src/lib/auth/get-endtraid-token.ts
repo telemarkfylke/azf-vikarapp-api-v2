@@ -33,7 +33,7 @@ const getGraphAuth = async (scope: string, options: GetGraphAuthOptions = { forc
   };
 
   const authResult: AuthenticationResult | null = await cca.acquireTokenByClientCredential(clientCredentials);
-  if (!authResult || !authResult.expiresOn || !authResult.accessToken) {
+  if (!authResult?.expiresOn || !authResult.accessToken) {
     throw new Error("Failed to acquire graph auth from Microsoft");
   }
 

@@ -1,23 +1,7 @@
 import { logger } from "@vestfoldfylke/loglady";
 import { verify } from "azure-ad-verify-token";
 import { azureApplication } from "../../../config.js";
-
-export type ValidatedClaims = {
-  oid?: string;
-  onprem_sid?: string;
-  ipaddr?: string;
-  name?: string;
-  upn?: string;
-  given_name?: string;
-  family_name?: string;
-  jobTitle?: string;
-  department?: string;
-  officeLocation?: string;
-  companyName?: string;
-  roles?: string[];
-  scp?: string;
-  [claim: string]: unknown;
-};
+import type { ValidatedClaims } from "../../types/auth.js";
 
 type VerifyConfig = {
   jwksUri: string;
