@@ -12,14 +12,17 @@ const unwrap = <T>(data: GraphResponse<T>): T => {
   if (data && typeof data === "object" && "value" in data) {
     return (data as { value: T }).value;
   }
+
   return data as T;
 };
 
 export const getUser = async (upn: string): Promise<GraphUser | null> => {
-  if (!upn) throw new Error("Cannot search for a user if 'upn' is not specified");
+  if (!upn) {
+    throw new Error("Cannot search for a user if 'upn' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(
     `https://graph.microsoft.com/v1.0/users/${upn}?$select=id,displayName,givenName,surname,userPrincipalName,companyName,officeLocation,preferredLanguage,mail,jobTitle,mobilePhone,businessPhones`,
     {
       method: "GET",
@@ -31,22 +34,30 @@ export const getUser = async (upn: string): Promise<GraphUser | null> => {
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(errorData, "getUser - Failed to get user with upn '{Upn}'. Status: {Status} - {StatusText}", upn, response.status, response.statusText);
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphUser>;
+  const data: GraphResponse<GraphUser> = (await response.json()) as GraphResponse<GraphUser>;
   return unwrap(data);
 };
 
 export const searchUsersInGroup = async (searchTerm: string, groupId: string, requestor: Requestor, returnSelf?: string | boolean): Promise<GraphUser[] | null> => {
-  if (!searchTerm) throw new Error("Cannot search for a user if 'searchTerm' is not specified");
-  if (!groupId) throw new Error("Cannot search for a user if 'groupId' is not specified");
-  if (!requestor) throw new Error("Cannot search for a user if 'requestor' is not specified");
+  if (!searchTerm) {
+    throw new Error("Cannot search for a user if 'searchTerm' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(
+  if (!groupId) {
+    throw new Error("Cannot search for a user if 'groupId' is not specified");
+  }
+
+  if (!requestor) {
+    throw new Error("Cannot search for a user if 'requestor' is not specified");
+  }
+
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(
     `https://graph.microsoft.com/v1.0/groups/${groupId}/members?$search="displayName:${searchTerm}"&$select=id,displayName,jobTitle,officeLocation,userPrincipalName,companyName&$orderby=displayName`,
     {
       method: "GET",
@@ -59,7 +70,7 @@ export const searchUsersInGroup = async (searchTerm: string, groupId: string, re
   );
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(
       errorData,
       "searchUsersInGroup - Failed to search for users in groupId '{GroupId}' with searchTerm '{SearchTerm}'. Status: {Status} - {StatusText}",
@@ -71,17 +82,19 @@ export const searchUsersInGroup = async (searchTerm: string, groupId: string, re
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphUser[]>;
-  const users = unwrap(data);
+  const data: GraphResponse<GraphUser[]> = (await response.json()) as GraphResponse<GraphUser[]>;
+  const users: GraphUser[] = unwrap(data);
 
-  return !returnSelf ? users.filter((i) => i.userPrincipalName !== requestor.upn) : users;
+  return !returnSelf ? users.filter((i: GraphUser) => i.userPrincipalName !== requestor.upn) : users;
 };
 
 export const getOwnedObjects = async (upn: string): Promise<GraphOwnedObject[] | null> => {
-  if (!upn) throw new Error("Cannot search for a user if 'upn' is not specified");
+  if (!upn) {
+    throw new Error("Cannot search for a user if 'upn' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/users/${upn}/ownedObjects?$select=id,displayName,mail,description`, {
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/users/${upn}/ownedObjects?$select=id,displayName,mail,description`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -91,20 +104,22 @@ export const getOwnedObjects = async (upn: string): Promise<GraphOwnedObject[] |
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(errorData, "getOwnedObjects - Failed to get owned objects for upn '{Upn}'. Status: {Status} - {StatusText}", upn, response.status, response.statusText);
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphOwnedObject[]>;
+  const data: GraphResponse<GraphOwnedObject[]> = (await response.json()) as GraphResponse<GraphOwnedObject[]>;
   return unwrap(data);
 };
 
 export const getGroups = async (id: string): Promise<GraphGroup | null> => {
-  if (!id) throw new Error("Cannot search for a group if 'id' is not specified");
+  if (!id) {
+    throw new Error("Cannot search for a group if 'id' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/groups/${id}`, {
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/groups/${id}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -114,20 +129,22 @@ export const getGroups = async (id: string): Promise<GraphGroup | null> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(errorData, "getGroups - Failed to get group with id '{Id}'. Status: {Status} - {StatusText}", id, response.status, response.statusText);
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphGroup>;
+  const data: GraphResponse<GraphGroup> = (await response.json()) as GraphResponse<GraphGroup>;
   return unwrap(data);
 };
 
 export const getGroupOwners = async (groupId: string, substitutionId?: ObjectId | string): Promise<GraphUser[] | null> => {
-  if (!groupId) throw new Error("Cannot search for a group if 'groupId' is not specified");
+  if (!groupId) {
+    throw new Error("Cannot search for a group if 'groupId' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners`, {
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -137,7 +154,7 @@ export const getGroupOwners = async (groupId: string, substitutionId?: ObjectId 
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(errorData, "getGroupOwners - Failed to get group owners for groupId '{GroupId}'. Status: {Status} - {StatusText}", groupId, response.status, response.statusText);
 
     if (response.status === 404 && substitutionId) {
@@ -148,15 +165,17 @@ export const getGroupOwners = async (groupId: string, substitutionId?: ObjectId 
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphUser[]>;
+  const data: GraphResponse<GraphUser[]> = (await response.json()) as GraphResponse<GraphUser[]>;
   return unwrap(data);
 };
 
 export const getGroupMembers = async (id: string): Promise<GraphUser[] | null> => {
-  if (!id) throw new Error("Cannot search for a user if 'id' is not specified");
+  if (!id) {
+    throw new Error("Cannot search for a user if 'id' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/groups/${id}/members`, {
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/groups/${id}/members`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -166,21 +185,28 @@ export const getGroupMembers = async (id: string): Promise<GraphUser[] | null> =
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(errorData, "getGroupMembers - Failed to get members from groupId '{Id}'. Status: {Status} - {StatusText}", id, response.status, response.statusText);
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphUser[]>;
+  const data: GraphResponse<GraphUser[]> = (await response.json()) as GraphResponse<GraphUser[]>;
   return unwrap(data);
 };
 
 export const addGroupOwner = async (groupId: string, userId: string): Promise<string | { message: string } | null> => {
-  if (!groupId) throw new Error("Cannot search for a user if 'groupId' is not specified");
-  if (!userId) throw new Error("Cannot search for a user if 'userId' is not specified");
+  if (!groupId) {
+    throw new Error("Cannot search for a user if 'groupId' is not specified");
+  }
 
-  const user = await getUser(userId);
-  if (!user) throw new Error(`The user with id '${userId} could not be found'`);
+  if (!userId) {
+    throw new Error("Cannot search for a user if 'userId' is not specified");
+  }
+
+  const user: GraphUser | null = await getUser(userId);
+  if (!user) {
+    throw new Error(`The user with id '${userId} could not be found'`);
+  }
 
   let owners: GraphUser[] | null = [];
   try {
@@ -188,13 +214,18 @@ export const addGroupOwner = async (groupId: string, userId: string): Promise<st
   } catch {
     throw new Error(`The team '${groupId}' could not be found`);
   }
-  if (!owners) throw new Error(`The team '${groupId}' could not be found`);
 
-  const existing = owners.find((i) => i.id === userId);
-  if (existing) return { message: "The user is already a owner" };
+  if (!owners) {
+    throw new Error(`The team '${groupId}' could not be found`);
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/$ref`, {
+  const existing: GraphUser | undefined = owners.find((i: GraphUser) => i.id === userId);
+  if (existing) {
+    return { message: "The user is already a owner" };
+  }
+
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/$ref`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -205,7 +236,7 @@ export const addGroupOwner = async (groupId: string, userId: string): Promise<st
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(
       errorData,
       "addGroupOwner - Failed to add userId '{UserId}' as a group owner of groupId '{GroupId}'. Status: {Status} - {StatusText}",
@@ -221,11 +252,16 @@ export const addGroupOwner = async (groupId: string, userId: string): Promise<st
 };
 
 export const removeGroupOwner = async (groupId: string, userId: string): Promise<string | null> => {
-  if (!groupId) throw new Error("Cannot search for a user if 'groupId' is not specified");
-  if (!userId) throw new Error("Cannot search for a user if 'userId' is not specified");
+  if (!groupId) {
+    throw new Error("Cannot search for a user if 'groupId' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/${userId}/$ref`, {
+  if (!userId) {
+    throw new Error("Cannot search for a user if 'userId' is not specified");
+  }
+
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/owners/${userId}/$ref`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -235,7 +271,7 @@ export const removeGroupOwner = async (groupId: string, userId: string): Promise
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(
       errorData,
       "removeGroupOwner - Failed to remove userId '{UserId}' as an owner of groupId '{GroupId}'. Status: {Status} - {StatusText}",
@@ -251,11 +287,16 @@ export const removeGroupOwner = async (groupId: string, userId: string): Promise
 };
 
 export const removeGroupMember = async (groupId: string, userId: string): Promise<string | null> => {
-  if (!groupId) throw new Error("Cannot search for a user if 'groupId' is not specified");
-  if (!userId) throw new Error("Cannot search for a user if 'userId' is not specified");
+  if (!groupId) {
+    throw new Error("Cannot search for a user if 'groupId' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members/${userId}/$ref`, {
+  if (!userId) {
+    throw new Error("Cannot search for a user if 'userId' is not specified");
+  }
+
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members/${userId}/$ref`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
@@ -265,7 +306,7 @@ export const removeGroupMember = async (groupId: string, userId: string): Promis
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(
       errorData,
       "removeGroupMember - Failed to remove userId '{UserId}' as a member of groupId '{GroupId}'. Status: {Status} - {StatusText}",
@@ -281,10 +322,12 @@ export const removeGroupMember = async (groupId: string, userId: string): Promis
 };
 
 export const getAdditionalRequestorInfo = async (requestor: Requestor): Promise<GraphUser | null> => {
-  if (!requestor) throw new Error("Cannot search for a user if 'requestor' is not specified");
+  if (!requestor) {
+    throw new Error("Cannot search for a user if 'requestor' is not specified");
+  }
 
-  const authValue = await getGraphAuth(azureApplication.scope);
-  const response = await fetch(`https://graph.microsoft.com/v1.0/users/${requestor.upn}?$select=jobTitle,department,officeLocation,companyName`, {
+  const authValue: string = await getGraphAuth(azureApplication.scope);
+  const response: Response = await fetch(`https://graph.microsoft.com/v1.0/users/${requestor.upn}?$select=jobTitle,department,officeLocation,companyName`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -293,11 +336,11 @@ export const getAdditionalRequestorInfo = async (requestor: Requestor): Promise<
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(errorData, "getAdditionalRequestorInfo - Failed to get user with upn '{RequestorUpn}'. Status: {Status} - {StatusText}", requestor.upn, response.status, response.statusText);
     return null;
   }
 
-  const data = (await response.json()) as GraphResponse<GraphUser>;
+  const data: GraphResponse<GraphUser> = (await response.json()) as GraphResponse<GraphUser>;
   return unwrap(data);
 };

@@ -7,10 +7,21 @@ export type StatEntry = {
   description: string;
 };
 
+type StatObject = {
+  system: string;
+  engine: string;
+  county: string;
+  company: string;
+  department: string;
+  description: string;
+  status: string;
+  type: string;
+};
+
 const createStats = async (stat: StatEntry): Promise<boolean> => {
-  const logPrefix = "createStats";
+  const logPrefix: string = "createStats";
   logger.info(`${logPrefix} - Creating statistics for {Status} substitution`, stat.status);
-  const statObj = {
+  const statObj: StatObject = {
     system: "VikarApp",
     engine: "azf-vikarapp-api",
     county: fylke.fylke,
@@ -21,7 +32,7 @@ const createStats = async (stat: StatEntry): Promise<boolean> => {
     type: "VikarApp"
   };
 
-  const response = await fetch(`${statistics.url}/Stats`, {
+  const response: Response = await fetch(`${statistics.url}/Stats`, {
     method: "POST",
     headers: {
       "X-Functions-Key": statistics.key
@@ -30,7 +41,7 @@ const createStats = async (stat: StatEntry): Promise<boolean> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(
       errorData,
       `${logPrefix} - Failed to create statistics for {Status} substitution. ApiStatus: {ApiStatus} - {StatusText} : {@StatObject}`,

@@ -19,12 +19,26 @@ export type ValidatedClaims = {
   [claim: string]: unknown;
 };
 
-const validateAzureAd = async (authHeader: string): Promise<ValidatedClaims> => {
-  if (!authHeader) throw new Error("authentication header missing");
-  if (typeof authHeader !== "string") throw new Error("authentication header is not a string");
-  if (!authHeader.startsWith("Bearer")) throw new Error("Invalid authorization header");
+type VerifyConfig = {
+  jwksUri: string;
+  issuer: string;
+  audience: string;
+};
 
-  const verifyConfig = {
+const validateAzureAd = async (authHeader: string): Promise<ValidatedClaims> => {
+  if (!authHeader) {
+    throw new Error("authentication header missing");
+  }
+
+  if (typeof authHeader !== "string") {
+    throw new Error("authentication header is not a string");
+  }
+
+  if (!authHeader.startsWith("Bearer")) {
+    throw new Error("Invalid authorization header");
+  }
+
+  const verifyConfig: VerifyConfig = {
     jwksUri: azureApplication.jwkUri,
     issuer: azureApplication.issuer,
     audience: azureApplication.audience
@@ -38,7 +52,9 @@ const validateAzureAd = async (authHeader: string): Promise<ValidatedClaims> => 
     throw new Error("The authentication header is invalid");
   }
 
-  if (!claims) throw new Error("Could not validate authentication header");
+  if (!claims) {
+    throw new Error("Could not validate authentication header");
+  }
 
   return claims;
 };

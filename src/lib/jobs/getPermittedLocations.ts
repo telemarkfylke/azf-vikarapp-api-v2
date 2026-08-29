@@ -10,12 +10,12 @@ type SchoolDoc = {
 };
 
 export const getPermittedLocations = async (company: string): Promise<PermittedLocation[]> => {
-  const logPrefix = "getPermittedLocations";
+  const logPrefix: string = "getPermittedLocations";
   const permittedLocations: PermittedLocation[] = [];
 
-  const mongoClient = await getMongoClient();
+  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
 
-  const school = (await mongoClient.db(mongoDB.DB_NAME).collection<SchoolDoc>(mongoDB.SCHOOLS_COLLECTION).findOne({ name: company })) as SchoolDoc | null;
+  const school: SchoolDoc | null = (await mongoClient.db(mongoDB.DB_NAME).collection<SchoolDoc>(mongoDB.SCHOOLS_COLLECTION).findOne({ name: company })) as SchoolDoc | null;
 
   if (!school) {
     logger.error(`${logPrefix} - School not found for company '{Company}'`, company);
@@ -24,14 +24,20 @@ export const getPermittedLocations = async (company: string): Promise<PermittedL
 
   logger.info(`${logPrefix} - Add the users own school to the permitted locations`);
   if (school._id && school.name) {
-    permittedLocations.push({ _id: school._id, name: school.name });
+    permittedLocations.push({
+      _id: school._id,
+      name: school.name
+    });
   }
 
   logger.info(`${logPrefix} - Add any other permitted schools to the permitted locations`);
   if (school.permittedSchools && Array.isArray(school.permittedSchools)) {
     for (const location of school.permittedSchools) {
       if (location._id && location.name) {
-        permittedLocations.push({ _id: location._id, name: location.name });
+        permittedLocations.push({
+          _id: location._id,
+          name: location.name
+        });
       }
     }
   }

@@ -1,21 +1,23 @@
 import type { HttpRequest } from "@azure/functions";
 import type { Requestor } from "../../types/requestor.js";
 import verifyKey from "./apikey.js";
-import validateAzureAd from "./azuread.js";
+import validateAzureAd, { type ValidatedClaims } from "./azuread.js";
 
 type TestRequestWithRequestor = HttpRequest & { requestor?: Requestor };
 
 export const auth = async (req: HttpRequest): Promise<Requestor> => {
   if (process.env.NODE_ENV === "test") {
-    const testReq = req as TestRequestWithRequestor;
-    if (testReq.requestor) return testReq.requestor;
+    const testReq: TestRequestWithRequestor = req as TestRequestWithRequestor;
+    if (testReq.requestor) {
+      return testReq.requestor;
+    }
   }
 
-  const bearer = req.headers.get("authorization");
-  const apiHeader = req.headers.get("x-api-key");
+  const bearer: string | null = req.headers.get("authorization");
+  const apiHeader: string | null = req.headers.get("x-api-key");
 
   if (bearer) {
-    const claims = await validateAzureAd(bearer);
+    const claims: ValidatedClaims = await validateAzureAd(bearer);
     return {
       id: claims.oid,
       sid: claims.onprem_sid,

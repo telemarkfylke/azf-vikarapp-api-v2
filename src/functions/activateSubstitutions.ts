@@ -5,7 +5,10 @@ import { activateSubstitutions } from "../lib/jobs/graphJobs.js";
 import { logToDB } from "../lib/jobs/logToDB.js";
 
 const handler = async (_myTimer: Timer, context: InvocationContext): Promise<void> => {
-  if (APP_DEACTIVATE_TIMERS) return;
+  if (APP_DEACTIVATE_TIMERS) {
+    return;
+  }
+
   try {
     await activateSubstitutions(false, undefined, context);
   } catch (error) {

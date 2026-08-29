@@ -1,5 +1,5 @@
 import { logger } from "@vestfoldfylke/loglady";
-import { ObjectId } from "mongodb";
+import { type DeleteResult, ObjectId } from "mongodb";
 import { mongoDB } from "../../config.js";
 import { getMongoClient } from "./mongoClient.js";
 
@@ -9,11 +9,11 @@ export const removeSubstitution = async (id: ObjectId | string): Promise<void> =
     throw new Error("Cannot remove a substitution if 'id' is not specified");
   }
 
-  const mongoClient = await getMongoClient();
-  const objectId = typeof id === "string" ? new ObjectId(id) : id;
+  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
+  const objectId: ObjectId = typeof id === "string" ? new ObjectId(id) : id;
 
   try {
-    const result = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).deleteOne({ _id: objectId });
+    const result: DeleteResult = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).deleteOne({ _id: objectId });
     if (result.deletedCount === 0) {
       logger.error("removeSubstitution - No substitution found with id '{Id}'", objectId.toString());
       throw new Error(`No substitution found with id '${objectId}'`);

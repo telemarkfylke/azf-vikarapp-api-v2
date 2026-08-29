@@ -10,10 +10,14 @@ export const getMongoClient = async (): Promise<MongoClient> => {
     client = new MongoClient(mongoDB.MONGODB_CONNECTION_STRING);
     logger.info("mongo-client - Client connected");
   }
+
   return client;
 };
 
 export const closeMongoClient = (): void => {
-  if (client) client.close();
+  if (client) {
+    client.close();
+  }
+
   client = null;
 };

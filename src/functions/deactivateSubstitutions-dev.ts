@@ -10,7 +10,10 @@ const handler = async (_request: HttpRequest, context: InvocationContext): Promi
   } catch (error) {
     logger.errorException(error, "deactivateSubstitutions-dev - An error occured while trying to deactivate substitutions");
     await logToDB("error", error instanceof Error ? error.message : error, undefined, context);
-    return { status: 500, jsonBody: { error: error instanceof Error ? error.message : String(error) } };
+    return {
+      status: 500,
+      jsonBody: { error: error instanceof Error ? error.message : String(error) }
+    };
   }
 };
 
