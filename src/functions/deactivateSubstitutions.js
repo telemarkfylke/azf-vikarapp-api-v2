@@ -1,8 +1,8 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
-const config = require("../../config");
-const { deactivateSubstitutions } = require("../lib/jobs/graphJobs");
-const { logToDB } = require("../lib/jobs/logToDB");
+const config = require("../../config.js");
+const { deactivateSubstitutions } = require("../lib/jobs/graphJobs.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
 
 app.timer("deactivateSubstitutions", {
   schedule: "30 */15 * * * *", // every 15th minute at 30 seconds past the minute

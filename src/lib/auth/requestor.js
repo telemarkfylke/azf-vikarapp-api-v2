@@ -1,7 +1,7 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const config = require("../../../config");
-const { auth } = require("./auth");
-const { getAdditionalRequestorInfo } = require("../callGraph");
+const config = require("../../../config.js");
+const { auth } = require("./auth.js");
+const { getAdditionalRequestorInfo } = require("../callGraph.js");
 
 if (config.length > 0) {
   logger.info("prepareRequest - Config loaded");

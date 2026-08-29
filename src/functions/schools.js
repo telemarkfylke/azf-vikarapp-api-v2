@@ -1,10 +1,10 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
 const { ObjectId } = require("mongodb");
-const { mongoDB } = require("../../config");
-const { getMongoClient } = require("../lib/mongoClient");
-const { logToDB } = require("../lib/jobs/logToDB");
-const { prepareRequest } = require("../lib/auth/requestor");
+const { mongoDB } = require("../../config.js");
+const { getMongoClient } = require("../lib/mongoClient.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
+const { prepareRequest } = require("../lib/auth/requestor.js");
 
 app.http("schools", {
   methods: ["GET", "POST", "PUT"],
@@ -48,7 +48,8 @@ app.http("schools", {
 
       // // Return the schools
       return { status: 200, jsonBody: schools };
-    } else if (request.method === "POST") {
+    }
+    if (request.method === "POST") {
       let school;
       logPrefix = "schools - post";
 
@@ -65,7 +66,8 @@ app.http("schools", {
 
       // Return the school posted to the database
       return { status: 201, jsonBody: school };
-    } else if (request.method === "PUT") {
+    }
+    if (request.method === "PUT") {
       // Update the school with the provided id
       let school;
       logPrefix = "schools - put";

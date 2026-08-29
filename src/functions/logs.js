@@ -1,9 +1,9 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
-const { NODE_ENV, mongoDB } = require("../../config");
-const { logToDB } = require("../lib/jobs/logToDB");
-const { prepareRequest } = require("../lib/auth/requestor");
-const { getMongoClient } = require("../lib/mongoClient");
+const { NODE_ENV, mongoDB } = require("../../config.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
+const { prepareRequest } = require("../lib/auth/requestor.js");
+const { getMongoClient } = require("../lib/mongoClient.js");
 
 app.http("logs", {
   methods: ["GET"],

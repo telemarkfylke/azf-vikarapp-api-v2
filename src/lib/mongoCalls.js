@@ -1,6 +1,6 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const { getMongoClient } = require("./mongoClient");
-const { mongoDB } = require("../../config");
+const { getMongoClient } = require("./mongoClient.js");
+const { mongoDB } = require("../../config.js");
 
 const removeSubstitution = async (id) => {
   if (!id) {

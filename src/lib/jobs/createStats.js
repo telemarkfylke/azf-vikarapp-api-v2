@@ -1,5 +1,5 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const { fylke, statistics } = require("../../../config");
+const { fylke, statistics } = require("../../../config.js");
 
 module.exports = async (stat) => {
   const logPrefix = "createStats";

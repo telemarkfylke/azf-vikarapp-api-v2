@@ -1,13 +1,13 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
 const { ObjectId } = require("mongodb");
-const { getMongoClient } = require("../lib/mongoClient");
-const { logToDB } = require("../lib/jobs/logToDB");
-const { getUser, getOwnedObjects } = require("../lib/callGraph");
-const { getPermittedLocations } = require("../lib/jobs/getPermittedLocations");
-const { activateSubstitutions, deactivateSubstitutions } = require("../lib/jobs/graphJobs");
-const { prepareRequest } = require("../lib/auth/requestor");
-const { mongoDB } = require("../../config");
+const { getMongoClient } = require("../lib/mongoClient.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
+const { getUser, getOwnedObjects } = require("../lib/callGraph.js");
+const { getPermittedLocations } = require("../lib/jobs/getPermittedLocations.js");
+const { activateSubstitutions, deactivateSubstitutions } = require("../lib/jobs/graphJobs.js");
+const { prepareRequest } = require("../lib/auth/requestor.js");
+const { mongoDB } = require("../../config.js");
 
 app.http("substitutions", {
   methods: ["GET", "POST", "PUT"],
@@ -183,7 +183,8 @@ app.http("substitutions", {
 
       // Return the substitutions
       return { status: 200, jsonBody: substitutions };
-    } else if (request.method === "POST") {
+    }
+    if (request.method === "POST") {
       logPrefix = "substitutions - post";
       // Get all the unique substitutions and the teacher UPNS from the request body
       const uniqueSubstituteUpns = [...new Set(requestBody.map((i) => i.substituteUpn))];

@@ -1,10 +1,10 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
-const { prepareRequest } = require("../lib/auth/requestor");
-const { searchUsersInGroup } = require("../lib/callGraph");
-const { logToDB } = require("../lib/jobs/logToDB");
-const { getPermittedLocations } = require("../lib/jobs/getPermittedLocations");
-const { searchGroupId } = require("../../config");
+const { prepareRequest } = require("../lib/auth/requestor.js");
+const { searchUsersInGroup } = require("../lib/callGraph.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
+const { getPermittedLocations } = require("../lib/jobs/getPermittedLocations.js");
+const { searchGroupId } = require("../../config.js");
 
 app.http("teachers", {
   methods: ["GET"],

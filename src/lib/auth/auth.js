@@ -1,5 +1,5 @@
-const apikey = require("./apikey");
-const azuread = require("./azuread");
+const apikey = require("./apikey.js");
+const azuread = require("./azuread.js");
 
 /**
  * Auth's the request

@@ -1,6 +1,6 @@
 const { logger } = require("@vestfoldfylke/loglady");
 const { MongoClient } = require("mongodb");
-const { mongoDB } = require("../../config");
+const { mongoDB } = require("../../config.js");
 
 let client = null;
 

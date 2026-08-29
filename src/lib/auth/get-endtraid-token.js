@@ -1,7 +1,7 @@
 const { ConfidentialClientApplication } = require("@azure/msal-node");
 const { logger } = require("@vestfoldfylke/loglady");
 const NodeCache = require("node-cache");
-const { azureApplication } = require("../../../config");
+const { azureApplication } = require("../../../config.js");
 
 const cache = new NodeCache({ stdTTL: 3000 });
 

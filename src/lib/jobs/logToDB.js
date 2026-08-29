@@ -1,6 +1,6 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const { mongoDB } = require("../../../config");
-const { getMongoClient } = require("../mongoClient");
+const { mongoDB } = require("../../../config.js");
+const { getMongoClient } = require("../mongoClient.js");
 
 const logToDB = async (type = "info", data, request, context, requestor) => {
   if (!data) {

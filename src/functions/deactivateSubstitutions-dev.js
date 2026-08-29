@@ -1,7 +1,7 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
-const { deactivateSubstitutions } = require("../lib/jobs/graphJobs");
-const { logToDB } = require("../lib/jobs/logToDB");
+const { deactivateSubstitutions } = require("../lib/jobs/graphJobs.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
 
 app.http("deactivateSubstitutions-dev", {
   methods: ["GET"],

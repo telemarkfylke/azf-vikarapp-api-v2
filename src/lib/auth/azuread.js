@@ -1,5 +1,5 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const { azureApplication } = require("../../../config");
+const { azureApplication } = require("../../../config.js");
 
 const verifyToken = (...args) => import("azure-ad-verify-token").then(({ verify }) => verify(...args));
 

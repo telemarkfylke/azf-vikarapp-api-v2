@@ -1,8 +1,8 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
-const config = require("../../config");
-const { activateSubstitutions } = require("../lib/jobs/graphJobs");
-const { logToDB } = require("../lib/jobs/logToDB");
+const config = require("../../config.js");
+const { activateSubstitutions } = require("../lib/jobs/graphJobs.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
 
 app.timer("activateSubstitutions", {
   schedule: "0 */15 * * * *",

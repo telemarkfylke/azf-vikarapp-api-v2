@@ -1,7 +1,7 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const getAccessToken = require("./auth/get-endtraid-token");
-const { azureApplication } = require("../../config");
-const { removeSubstitution } = require("./mongoCalls");
+const getAccessToken = require("./auth/get-endtraid-token.js");
+const { azureApplication } = require("../../config.js");
+const { removeSubstitution } = require("./mongoCalls.js");
 
 const getUser = async (upn) => {
   // Input validation

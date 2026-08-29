@@ -1,9 +1,9 @@
 const { app } = require("@azure/functions");
 const { logger } = require("@vestfoldfylke/loglady");
-const { getUser, getOwnedObjects } = require("../lib/callGraph");
-const { prepareRequest } = require("../lib/auth/requestor");
-const { getPermittedLocations } = require("../lib/jobs/getPermittedLocations");
-const { logToDB } = require("../lib/jobs/logToDB");
+const { getUser, getOwnedObjects } = require("../lib/callGraph.js");
+const { prepareRequest } = require("../lib/auth/requestor.js");
+const { getPermittedLocations } = require("../lib/jobs/getPermittedLocations.js");
+const { logToDB } = require("../lib/jobs/logToDB.js");
 
 app.http("teacherTeams", {
   methods: ["GET"],

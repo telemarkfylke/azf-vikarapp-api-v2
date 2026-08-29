@@ -1,9 +1,9 @@
 const { logger } = require("@vestfoldfylke/loglady");
-const { mongoDB } = require("../../../config");
-const { getGroupOwners, getGroupMembers, removeGroupMember, removeGroupOwner, addGroupOwner, getAdditionalRequestorInfo } = require("../callGraph");
-const { getMongoClient } = require("../mongoClient");
-const createStats = require("./createStats");
-const { logToDB } = require("./logToDB");
+const { mongoDB } = require("../../../config.js");
+const { getGroupOwners, getGroupMembers, removeGroupMember, removeGroupOwner, addGroupOwner, getAdditionalRequestorInfo } = require("../callGraph.js");
+const { getMongoClient } = require("../mongoClient.js");
+const createStats = require("./createStats.js");
+const { logToDB } = require("./logToDB.js");
 
 const deactivateSubstitutions = async (onlyFirst = false, substitutions, request, context) => {
   const logPrefix = "deactivateSubstitutions - graphJobs.js";

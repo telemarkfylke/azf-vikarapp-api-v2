@@ -5,8 +5,8 @@
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
-    "test": "biome check",
-    "test:fix": "biome check --write"
+    "test": "npx @biomejs/biome check",
+    "lint:fix": "npx @biomejs/biome check --write"
   },
   "dependencies": {
     "@azure/functions": "^4.11.2",

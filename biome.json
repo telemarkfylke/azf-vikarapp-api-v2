@@ -13,14 +13,25 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "expand": "auto",
-    "includes": ["**", "!node_modules", "!!package.json"]
+    "includes": ["**", "!dist", "!node_modules", "!!package.json"]
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "suspicious": {
+        "noExplicitAny": "warn"
+      },
+      "correctness": {
+        "useImportExtensions": {
+          "options": {
+            "forceJsExtensions": true
+          },
+          "level": "error"
+        }
+      }
     },
-    "includes": ["**", "!node_modules", "!!package.json"]
+    "includes": ["**", "!dist", "!node_modules", "!!package.json"]
   },
   "javascript": {
     "formatter": {
@@ -32,7 +43,7 @@
   },
   "overrides": [
     {
-      "includes": ["func*/*.js", "jest/*.js", "sharedcode/**/*.js"],
+      "includes": ["**", "!dist", "!node_modules", "!!package.json"],
       "javascript": {
         "globals": []
       },
