@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -13,14 +13,25 @@
     "indentStyle": "space",
     "indentWidth": 2,
     "expand": "auto",
-    "includes": ["**", "!node_modules", "!!package.json"]
+    "includes": ["**", "!dist", "!node_modules", "!!package.json"]
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended",
+      "suspicious": {
+        "noExplicitAny": "warn"
+      },
+      "correctness": {
+        "useImportExtensions": {
+          "options": {
+            "forceJsExtensions": true
+          },
+          "level": "error"
+        }
+      }
     },
-    "includes": ["**", "!node_modules", "!!package.json"]
+    "includes": ["**", "!dist", "!node_modules", "!!package.json"]
   },
   "javascript": {
     "formatter": {
@@ -32,7 +43,7 @@
   },
   "overrides": [
     {
-      "includes": ["func*/*.js", "jest/*.js", "sharedcode/**/*.js"],
+      "includes": ["**", "!dist", "!node_modules", "!!package.json"],
       "javascript": {
         "globals": []
       },
