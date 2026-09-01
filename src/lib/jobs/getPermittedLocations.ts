@@ -1,25 +1,18 @@
 import { logger } from "@vestfoldfylke/loglady";
 import { mongoDB } from "../../../config.js";
 import type { PermittedLocation } from "../../types/graph.js";
-import { getMongoClient } from "../mongoClient.js";
-
-type SchoolDoc = {
-  _id: unknown;
-  name: string;
-  permittedSchools?: PermittedLocation[];
-};
+import type { SchoolDoc } from "../../types/mongo.js";
+import { findOneByQuery } from "../mongoCalls.js";
 
 export const getPermittedLocations = async (company: string): Promise<PermittedLocation[]> => {
   const logPrefix: string = "getPermittedLocations";
   const permittedLocations: PermittedLocation[] = [];
 
-  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
-
-  const school: SchoolDoc | null = (await mongoClient.db(mongoDB.DB_NAME).collection<SchoolDoc>(mongoDB.SCHOOLS_COLLECTION).findOne({ name: company })) as SchoolDoc | null;
+  const school: SchoolDoc | null = await findOneByQuery<SchoolDoc>(mongoDB.SCHOOLS_COLLECTION, { name: company });
 
   if (!school) {
     logger.error(`${logPrefix} - School not found for company '{Company}'`, company);
-    throw new Error("School not found");
+    throw new Error(`School not found for company '${company}'`);
   }
 
   logger.info(`${logPrefix} - Add the users own school to the permitted locations`);

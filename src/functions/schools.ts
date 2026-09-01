@@ -1,10 +1,12 @@
 import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from "@azure/functions";
 import { logger } from "@vestfoldfylke/loglady";
-import { type Document, type InsertOneResult, ObjectId, type UpdateResult, type WithId } from "mongodb";
+import { type InsertOneResult, ObjectId, type UpdateResult } from "mongodb";
 import { mongoDB } from "../../config.js";
 import { prepareRequest } from "../lib/auth/requestor.js";
 import { logToDB } from "../lib/jobs/logToDB.js";
+import { findByQuery } from "../lib/mongoCalls.js";
 import { getMongoClient } from "../lib/mongoClient.js";
+import type { SchoolDoc } from "../types/mongo.js";
 
 const handler = async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
   let logPrefix: string = "schools";
@@ -31,7 +33,7 @@ const handler = async (request: HttpRequest, context: InvocationContext): Promis
 
     try {
       logger.info(`${logPrefix} - Get the schools`);
-      const schools: WithId<Document>[] = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SCHOOLS_COLLECTION).find().sort({ name: 1 }).toArray();
+      const schools: SchoolDoc[] = await findByQuery<SchoolDoc[]>(mongoDB.SCHOOLS_COLLECTION);
       logger.info(`${logPrefix} - Found {SchoolCount} schools`, schools.length);
 
       return {
@@ -54,7 +56,7 @@ const handler = async (request: HttpRequest, context: InvocationContext): Promis
 
     try {
       logger.info(`${logPrefix} - Post the school to the database`);
-      const school: InsertOneResult<Document> = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SCHOOLS_COLLECTION).insertOne(JSON.parse(requestBody));
+      const school: InsertOneResult = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SCHOOLS_COLLECTION).insertOne(JSON.parse(requestBody));
       logger.info(`${logPrefix} - School posted to the database with id {InsertedId}`, school.insertedId.toString());
       await logToDB("info", school, request, context, requestor);
 

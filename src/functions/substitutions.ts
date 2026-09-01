@@ -7,7 +7,7 @@ import { getOwnedObjects, getUser } from "../lib/callGraph.js";
 import { getPermittedLocations } from "../lib/jobs/getPermittedLocations.js";
 import { activateSubstitutions, deactivateSubstitutions } from "../lib/jobs/graphJobs.js";
 import { logToDB } from "../lib/jobs/logToDB.js";
-import { getMongoClient } from "../lib/mongoClient.js";
+import { findByQuery, insertOne, updateOne } from "../lib/mongoCalls.js";
 import type { GraphOwnedObject, GraphUser, PermittedLocation } from "../types/graph.js";
 import type { Requestor } from "../types/requestor.js";
 import type { Substitution, SubstitutionRequest } from "../types/substitution.js";
@@ -172,11 +172,9 @@ const handleGet = async (request: HttpRequest, context: InvocationContext, reque
 
   const filter: Record<string, unknown> = clauses.length > 0 ? { $and: clauses } : {};
 
-  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
-
   try {
     logger.info(`${logPrefix} - Query the database`);
-    const substitutions: unknown[] = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(filter).sort({ expirationTimestamp: -1 }).toArray();
+    const substitutions: Substitution[] = await findByQuery<Substitution[]>(mongoDB.SUBSTITUTIONS_COLLECTION, filter, { sort: { expirationTimestamp: -1 } });
     logger.info(`${logPrefix} - Found {SubstitutionCount} substitutions`, substitutions.length);
 
     return {
@@ -196,7 +194,6 @@ const handleGet = async (request: HttpRequest, context: InvocationContext, reque
 
 const handlePost = async (request: HttpRequest, context: InvocationContext, requestor: Requestor, requestBody: SubstitutionRequest[]): Promise<HttpResponseInit> => {
   const logPrefix: string = "substitutions - post";
-  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
 
   const uniqueSubstituteUpns: string[] = [...new Set(requestBody.map((i: SubstitutionRequest) => i.substituteUpn))];
   const uniqueTeacherUpns: string[] = [...new Set(requestBody.map((i: SubstitutionRequest) => i.teacherUpn))];
@@ -210,7 +207,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
       throw new Error(`Could not find the substitute with upn ${upn}`);
     }
 
-    const existingSubstitutions: unknown[] = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find({ substituteId: substitute.id }).toArray();
+    const existingSubstitutions: Substitution[] = await findByQuery<Substitution[]>(mongoDB.SUBSTITUTIONS_COLLECTION, { substituteId: substitute.id });
     substitute.substitutions = existingSubstitutions as unknown as Substitution[];
     logger.info(`${logPrefix} - Found {SubstitutionCount} existing substitutions for the substitute {Upn}`, substitute.substitutions.length, upn);
 
@@ -376,7 +373,7 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
     for (const newSubstitution of newSubstitutions) {
       try {
         logger.info(`${logPrefix} - Insert the new substitution`);
-        const result: InsertOneResult = await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).insertOne(newSubstitution);
+        const result: InsertOneResult = await insertOne(mongoDB.SUBSTITUTIONS_COLLECTION, newSubstitution);
         documents.push(result);
 
         try {
@@ -405,10 +402,11 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
     for (const renewal of renewedSubstitutions) {
       try {
         logger.info(`${logPrefix} - Update the expirationTimestamp on the renewed substitution with id {RenewalId}`, renewal._id.toString());
-        const result: UpdateResult = await mongoClient
-          .db(mongoDB.DB_NAME)
-          .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
-          .updateOne({ _id: new ObjectId(renewal._id) }, { $set: { expirationTimestamp: renewal.expirationTimestamp, updatedTimestamp: new Date() }, $inc: { substitutionUpdated: 1 } });
+        const result: UpdateResult = await updateOne(
+          mongoDB.SUBSTITUTIONS_COLLECTION,
+          { _id: new ObjectId(renewal._id) },
+          { $set: { expirationTimestamp: renewal.expirationTimestamp, updatedTimestamp: new Date() }, $inc: { substitutionUpdated: 1 } }
+        );
         documents = [...documents, result];
 
         try {
@@ -436,13 +434,11 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
     for (const renewal of renewedExpiredSubstitutions) {
       try {
         logger.info(`${logPrefix} - Update the expired substitution with id {RenewalId} to pending`, renewal._id.toString());
-        const result: UpdateResult = await mongoClient
-          .db(mongoDB.DB_NAME)
-          .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
-          .updateOne(
-            { _id: new ObjectId(renewal._id) },
-            { $set: { expirationTimestamp: renewal.expirationTimestamp, updatedTimestamp: new Date(), status: "pending" }, $inc: { substitutionUpdated: 1 } }
-          );
+        const result: UpdateResult = await updateOne(
+          mongoDB.SUBSTITUTIONS_COLLECTION,
+          { _id: new ObjectId(renewal._id) },
+          { $set: { expirationTimestamp: renewal.expirationTimestamp, updatedTimestamp: new Date(), status: "pending" }, $inc: { substitutionUpdated: 1 } }
+        );
         documents = [...documents, result];
 
         try {
@@ -485,7 +481,6 @@ const handlePost = async (request: HttpRequest, context: InvocationContext, requ
 
 const handlePut = async (request: HttpRequest, context: InvocationContext, requestor: Requestor, ids: string[]): Promise<HttpResponseInit> => {
   const logPrefix: string = "substitutions - put";
-  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
 
   try {
     if (ids.length === 0) {
@@ -495,11 +490,7 @@ const handlePut = async (request: HttpRequest, context: InvocationContext, reque
 
     logger.info(`${logPrefix} - Get the substitutions from the ids`);
     const objectIds: ObjectId[] = ids.map((id: string) => new ObjectId(id));
-    const substitutions: Substitution[] = (await mongoClient
-      .db(mongoDB.DB_NAME)
-      .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
-      .find({ _id: { $in: objectIds } })
-      .toArray()) as unknown as Substitution[];
+    const substitutions: Substitution[] = await findByQuery<Substitution[]>(mongoDB.SUBSTITUTIONS_COLLECTION, { _id: { $in: objectIds } });
 
     if (substitutions.length === 0) {
       logger.warn(`${logPrefix} - No substitutions found`);

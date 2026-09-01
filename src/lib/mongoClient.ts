@@ -14,9 +14,9 @@ export const getMongoClient = async (): Promise<MongoClient> => {
   return client;
 };
 
-export const closeMongoClient = (): void => {
+export const closeMongoClient = async (): Promise<void> => {
   if (client) {
-    client.close();
+    await client.close();
   }
 
   client = null;

@@ -7,13 +7,12 @@ import type { Requestor } from "../../types/requestor.js";
 import type { StatEntry } from "../../types/stats.js";
 import type { Substitution } from "../../types/substitution.js";
 import { addGroupOwner, getAdditionalRequestorInfo, getGroupMembers, getGroupOwners, removeGroupMember, removeGroupOwner } from "../callGraph.js";
-import { getMongoClient } from "../mongoClient.js";
+import { findByQuery, updateOne } from "../mongoCalls.js";
 import createStats from "./createStats.js";
 import { logToDB } from "./logToDB.js";
 
 export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = false, substitutions?: Substitution[], request?: HttpRequest, context?: InvocationContext): Promise<unknown[]> => {
   const logPrefix: string = "deactivateSubstitutions - graphJobs.js";
-  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
 
   let items: Substitution[] | undefined = substitutions;
   if (!items) {
@@ -24,7 +23,7 @@ export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = f
     };
 
     try {
-      items = (await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray()) as unknown as Substitution[];
+      items = await findByQuery<Substitution[]>(mongoDB.SUBSTITUTIONS_COLLECTION, query);
     } catch (error) {
       logger.errorException(error, `${logPrefix} - An error occured while trying to get the active substitutions`);
       throw new Error("An error occured while trying to get the active substitutions");
@@ -84,10 +83,7 @@ export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = f
       }
 
       logger.info(`${logPrefix} - Set the substitution: {SubstitutionId} status to 'expired'`, substitution._id.toString());
-      const updatedSub: UpdateResult = await mongoClient
-        .db(mongoDB.DB_NAME)
-        .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
-        .updateOne({ _id: substitution._id }, { $set: { status: "expired" } });
+      const updatedSub: UpdateResult = await updateOne(mongoDB.SUBSTITUTIONS_COLLECTION, { _id: substitution._id }, { $set: { status: "expired" } });
       logger.info(`${logPrefix} - Substitution: {SubstitutionId} updated, status: 'expired'`, substitution._id.toString());
       responses.push(updatedSub);
       stats.push({
@@ -127,12 +123,11 @@ export const deactivateSubstitutions = async (onlyFirst: boolean | undefined = f
   return responses;
 };
 
-export const activateSubstitutions = async (onlyFirst: boolean | undefined = false, request?: HttpRequest, context?: InvocationContext): Promise<unknown[] | undefined> => {
+export const activateSubstitutions = async (onlyFirst: boolean | undefined = false, request?: HttpRequest, context?: InvocationContext): Promise<UpdateResult[] | undefined> => {
   const logPrefix: string = "activateSubstitutions - graphJobs.js";
-  const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
 
   const query: Record<string, unknown> = { status: "pending" };
-  let pendingSubstitutions: Substitution[] = (await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.SUBSTITUTIONS_COLLECTION).find(query).toArray()) as unknown as Substitution[];
+  let pendingSubstitutions: Substitution[] = await findByQuery<Substitution[]>(mongoDB.SUBSTITUTIONS_COLLECTION, query);
 
   if (!pendingSubstitutions || pendingSubstitutions.length === 0) {
     logger.info(`${logPrefix} - No pending substitutions found`);
@@ -144,7 +139,7 @@ export const activateSubstitutions = async (onlyFirst: boolean | undefined = fal
     pendingSubstitutions = [pendingSubstitutions[0]];
   }
 
-  const responses: unknown[] = [];
+  const responses: UpdateResult[] = [];
   const stats: StatEntry[] = [];
 
   for (const substitution of pendingSubstitutions) {
@@ -167,10 +162,7 @@ export const activateSubstitutions = async (onlyFirst: boolean | undefined = fal
         await logToDB("error", error, request, context);
       }
 
-      const updatedSub: UpdateResult = await mongoClient
-        .db(mongoDB.DB_NAME)
-        .collection(mongoDB.SUBSTITUTIONS_COLLECTION)
-        .updateOne({ _id: substitution._id }, { $set: { status: "active", updatedTimestamp: new Date() } });
+      const updatedSub: UpdateResult = await updateOne(mongoDB.SUBSTITUTIONS_COLLECTION, { _id: substitution._id }, { $set: { status: "active", updatedTimestamp: new Date() } });
       responses.push(updatedSub);
       stats.push({
         teamId: substitution.teamId,

@@ -1,28 +1,9 @@
 import type { HttpRequest, InvocationContext } from "@azure/functions";
 import { logger } from "@vestfoldfylke/loglady";
 import { mongoDB } from "../../../config.js";
+import type { LogEntry, LogType, NormalizedData } from "../../types/logs.js";
 import type { Requestor } from "../../types/requestor.js";
-import { getMongoClient } from "../mongoClient.js";
-
-type LogType = "info" | "warn" | "error" | "debug";
-
-type NormalizedData = { message?: string; stack?: string } | Record<string, unknown> | string;
-
-type LogEntry = {
-  type: LogType;
-  message: string;
-  sessionId: string;
-  origin: string;
-  method: string;
-  endpoint: string;
-  url: string;
-  request: HttpRequest | undefined;
-  requestor: Partial<Requestor>;
-  duration: number;
-  data: NormalizedData;
-  startTimeStamp: number | undefined;
-  endTimeStamp: Date;
-};
+import { insertOne } from "../mongoCalls.js";
 
 const isError = (value: unknown): value is Error => value instanceof Error;
 
@@ -62,7 +43,6 @@ export const logToDB = async (type: LogType = "info", data: unknown, request?: H
       }
     }
 
-    const mongoClient: Awaited<ReturnType<typeof getMongoClient>> = await getMongoClient();
     const logEntry: LogEntry = {
       type,
       message: typeof normalized === "object" && normalized !== null && "message" in normalized ? String((normalized as { message?: unknown }).message ?? "") : "",
@@ -78,7 +58,7 @@ export const logToDB = async (type: LogType = "info", data: unknown, request?: H
       startTimeStamp,
       endTimeStamp
     };
-    await mongoClient.db(mongoDB.DB_NAME).collection(mongoDB.LOG_COLLECTION).insertOne(logEntry);
+    await insertOne(mongoDB.LOG_COLLECTION, logEntry);
   } catch (error) {
     logger.errorException(error, "logToDB - An error occured while trying to log to the database");
     throw new Error("An error occured while trying to log to the database");
