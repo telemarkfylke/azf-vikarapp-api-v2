@@ -58,7 +58,7 @@ export const searchUsersInGroup = async (searchTerm: string, groupId: string, re
 
   const authValue: string = await getGraphAuth(azureApplication.scope);
   const response: Response = await fetch(
-    `https://graph.microsoft.com/v1.0/groups/${groupId}/members?$search="displayName:${searchTerm}"&$select=id,displayName,jobTitle,officeLocation,userPrincipalName,companyName&$orderby=displayName`,
+    `https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers/microsoft.graph.user?$count=true&$search="displayName:${searchTerm}"&$select=id,displayName,jobTitle,officeLocation,userPrincipalName,companyName&$orderby=displayName`,
     {
       method: "GET",
       headers: {
