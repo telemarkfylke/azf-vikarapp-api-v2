@@ -11,14 +11,14 @@
     "lint:fix": "npx @biomejs/biome check --write"
   },
   "dependencies": {
-    "@azure/functions": "^4.11.2",
-    "@azure/msal-node": "^5.6.0",
+    "@azure/functions": "^4.16.5",
+    "@azure/msal-node": "^6.0.1",
     "@vestfoldfylke/loglady": "^2.1.0",
     "azure-ad-verify-token": "^3.0.3",
-    "mongodb": "^7.1.0"
+    "mongodb": "^7.6.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.14",
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
   }
