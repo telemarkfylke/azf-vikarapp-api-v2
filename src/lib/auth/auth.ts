@@ -1,7 +1,7 @@
 import type { HttpRequest } from "@azure/functions";
 import type { ValidatedClaims } from "../../types/auth.js";
 import type { Requestor } from "../../types/requestor.js";
-import validateAzureAd from "./azuread.js";
+import decodeAccessToken from "./azuread.js";
 
 type TestRequestWithRequestor = HttpRequest & { requestor?: Requestor };
 
@@ -16,7 +16,7 @@ export const auth = async (req: HttpRequest): Promise<Requestor> => {
   const bearer: string | null = req.headers.get("authorization");
 
   if (bearer) {
-    const claims: ValidatedClaims = await validateAzureAd(bearer);
+    const claims: ValidatedClaims = await decodeAccessToken(bearer);
     return {
       id: claims.oid,
       sid: claims.onprem_sid,

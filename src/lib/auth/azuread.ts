@@ -1,15 +1,23 @@
 import { logger } from "@vestfoldfylke/loglady";
-import { verify } from "azure-ad-verify-token";
-import { azureApplication } from "../../../config.js";
 import type { ValidatedClaims } from "../../types/auth.js";
 
-type VerifyConfig = {
-  jwksUri: string;
-  issuer: string;
-  audience: string;
+// We only decode, as built in Entra auth verifies. Decode only for metadata - not authentication.
+const decodeJwt = (token: string): ValidatedClaims => {
+  const base64Payload: string | undefined = token.replace("Bearer ", "").split(".")[1];
+  if (!base64Payload) {
+    throw new Error("Unable to decode base64 payload");
+  }
+
+  const payload: string = Buffer.from(base64Payload, "base64url").toString();
+  const parsed: ValidatedClaims | null = JSON.parse(payload);
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Payload is not a JSON object");
+  }
+
+  return parsed;
 };
 
-const validateAzureAd = async (authHeader: string): Promise<ValidatedClaims> => {
+const decodeAccessToken = async (authHeader: string): Promise<ValidatedClaims> => {
   if (!authHeader) {
     throw new Error("authentication header missing");
   }
@@ -22,25 +30,12 @@ const validateAzureAd = async (authHeader: string): Promise<ValidatedClaims> => 
     throw new Error("Invalid authorization header");
   }
 
-  const verifyConfig: VerifyConfig = {
-    jwksUri: azureApplication.jwkUri,
-    issuer: azureApplication.issuer,
-    audience: azureApplication.audience
-  };
-
-  let claims: ValidatedClaims;
   try {
-    claims = (await verify(authHeader.replace("Bearer ", ""), verifyConfig)) as ValidatedClaims;
+    return decodeJwt(authHeader);
   } catch (err) {
     logger.errorException(err, "Error validating authentication header");
     throw new Error("The authentication header is invalid");
   }
-
-  if (!claims) {
-    throw new Error("Could not validate authentication header");
-  }
-
-  return claims;
 };
 
-export default validateAzureAd;
+export default decodeAccessToken;
