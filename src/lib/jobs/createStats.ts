@@ -1,10 +1,22 @@
-const { logger } = require("@vestfoldfylke/loglady");
-const { fylke, statistics } = require("../../../config");
+import { logger } from "@vestfoldfylke/loglady";
+import { fylke, statistics } from "../../../config.js";
+import type { StatEntry } from "../../types/stats.js";
 
-module.exports = async (stat) => {
-  const logPrefix = "createStats";
+type StatObject = {
+  system: string;
+  engine: string;
+  county: string;
+  company: string;
+  department: string;
+  description: string;
+  status: string;
+  type: string;
+};
+
+const createStats = async (stat: StatEntry): Promise<boolean> => {
+  const logPrefix: string = "createStats";
   logger.info(`${logPrefix} - Creating statistics for {Status} substitution`, stat.status);
-  const statObj = {
+  const statObj: StatObject = {
     system: "VikarApp",
     engine: "azf-vikarapp-api",
     county: fylke.fylke,
@@ -15,7 +27,7 @@ module.exports = async (stat) => {
     type: "VikarApp"
   };
 
-  const response = await fetch(`${statistics.url}/Stats`, {
+  const response: Response = await fetch(`${statistics.url}/Stats`, {
     method: "POST",
     headers: {
       "X-Functions-Key": statistics.key
@@ -24,7 +36,7 @@ module.exports = async (stat) => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData: unknown = await response.json();
     logger.errorException(
       errorData,
       `${logPrefix} - Failed to create statistics for {Status} substitution. ApiStatus: {ApiStatus} - {StatusText} : {@StatObject}`,
@@ -39,3 +51,5 @@ module.exports = async (stat) => {
   logger.info(`${logPrefix} - Successfully created statistics for {Status} substitution. ApiStatus: {ApiStatus} : {@StatObject}`, stat.status, response.status, statObj);
   return response.status === 200;
 };
+
+export default createStats;
