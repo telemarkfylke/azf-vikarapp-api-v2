@@ -32,8 +32,6 @@ type AppConfig = {
   APP_DEACTIVATE_TIMERS: string | boolean;
   NODE_ENV: string;
   searchGroupId: string;
-  APIKEYS_MINIMUM_LENGTH: number;
-  APIKEYS: string;
   azureApplication: AzureApplicationConfig;
   mongoDB: MongoDBConfig;
   statistics: StatisticsConfig;
@@ -54,8 +52,6 @@ const cfg: AppConfig = {
   APP_DEACTIVATE_TIMERS: process.env.APP_DEACTIVATE_TIMERS || false,
   NODE_ENV: process.env.NODE_ENV || "development",
   searchGroupId: process.env.NODE_ENV !== "test" ? process.env.AZURE_SEARCH_GROUP_ID || "" : "123",
-  APIKEYS_MINIMUM_LENGTH: Number(process.env.APIKEYS_MINIMUM_LENGTH) || 5,
-  APIKEYS: process.env.APIKEYS || "12345",
   azureApplication: {
     tenantId: required("AZURE_APP_TENANT_ID"),
     clientId: required("AZURE_APP_ID"),
@@ -87,8 +83,6 @@ export const USE_MOCK: string | boolean = cfg.USE_MOCK;
 export const APP_DEACTIVATE_TIMERS: string | boolean = cfg.APP_DEACTIVATE_TIMERS;
 export const NODE_ENV: string = cfg.NODE_ENV;
 export const searchGroupId: string = cfg.searchGroupId;
-export const APIKEYS_MINIMUM_LENGTH: number = cfg.APIKEYS_MINIMUM_LENGTH;
-export const APIKEYS: string = cfg.APIKEYS;
 export const azureApplication: AzureApplicationConfig = cfg.azureApplication;
 export const mongoDB: MongoDBConfig = cfg.mongoDB;
 export const statistics: StatisticsConfig = cfg.statistics;

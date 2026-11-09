@@ -1,7 +1,6 @@
 import type { HttpRequest } from "@azure/functions";
 import type { ValidatedClaims } from "../../types/auth.js";
 import type { Requestor } from "../../types/requestor.js";
-import verifyKey from "./apikey.js";
 import validateAzureAd from "./azuread.js";
 
 type TestRequestWithRequestor = HttpRequest & { requestor?: Requestor };
@@ -15,7 +14,6 @@ export const auth = async (req: HttpRequest): Promise<Requestor> => {
   }
 
   const bearer: string | null = req.headers.get("authorization");
-  const apiHeader: string | null = req.headers.get("x-api-key");
 
   if (bearer) {
     const claims: ValidatedClaims = await validateAzureAd(bearer);
@@ -33,18 +31,6 @@ export const auth = async (req: HttpRequest): Promise<Requestor> => {
       company: claims.companyName,
       roles: claims.roles || [],
       scopes: claims.scp?.split(" ") || []
-    };
-  }
-
-  if (apiHeader) {
-    verifyKey(apiHeader);
-    return {
-      name: "apikey",
-      id: "apikey",
-      department: "apikey",
-      email: "apikey@vtfk.no",
-      roles: [],
-      scopes: []
     };
   }
 
